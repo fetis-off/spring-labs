@@ -5,6 +5,7 @@ spring:
     url: jdbc:postgresql://localhost:5432/${DATABASE_NAME}
     username: username
     password: password
+    driver-class-name: org.postgresql.Driver
 
   jpa:
     properties:
@@ -12,3 +13,16 @@ spring:
         default_schema: public
     hibernate:
       ddl-auto: validate
+    show-sql: true
+    open-in-view: false
+
+server:
+  servlet:
+    context-path: /api
+jwt:
+  secret: ${jwt-secret}
+  expiration: 30000000
+logging:
+  level:
+    org.springframework.web: DEBUG
+    org.hibernate: DEBUG
