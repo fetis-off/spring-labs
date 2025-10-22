@@ -3,8 +3,8 @@ spring:
    name: ScooterRentService
   datasource:
     url: jdbc:postgresql://localhost:5432/${DATABASE_NAME}
-    username: username
-    password: password
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -12,7 +12,7 @@ spring:
       hibernate:
         default_schema: public
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: true
     open-in-view: false
 
@@ -20,9 +20,9 @@ server:
   servlet:
     context-path: /api
 jwt:
-  secret: ${jwt-secret}
+  secret: ${JWT_SECRET}
   expiration: 30000000
 logging:
   level:
     org.springframework.web: DEBUG
-    org.hibernate: DEBUG
+    org.hibernate: INFO

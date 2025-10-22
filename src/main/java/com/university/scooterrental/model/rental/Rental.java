@@ -1,6 +1,5 @@
 package com.university.scooterrental.model.rental;
 
-import com.university.scooterrental.model.payment.Payment;
 import com.university.scooterrental.model.scooter.Scooter;
 import com.university.scooterrental.model.user.User;
 import jakarta.persistence.*;

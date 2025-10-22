@@ -1,12 +1,17 @@
 package com.university.scooterrental.controller;
 
-import com.university.scooterrental.dto.scooter.ScooterDto;
+import com.university.scooterrental.dto.scooter.CreateScooterRequestDto;
+import com.university.scooterrental.dto.scooter.ScooterResponseDto;
 import com.university.scooterrental.model.scooter.Scooter;
 import com.university.scooterrental.service.scooter.ScooterService;
 import java.util.List;
+
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,19 +21,19 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@RestController
+@Controller
 @RequestMapping("/scooters")
 @RequiredArgsConstructor
 public class ScooterController {
   private final ScooterService scooterService;
 
   @GetMapping
-  public List<ScooterDto> getAllScooters() {
-    return scooterService.findAll();
+  public ResponseEntity<List<ScooterResponseDto>> getAllScooters() {
+      return ResponseEntity.ok(scooterService.findAll());
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity<ScooterDto> getScooterById(@PathVariable Long id) {
+  public ResponseEntity<ScooterResponseDto> getScooterById(@PathVariable Long id) {
     return scooterService.findById(id)
             .map(ResponseEntity::ok)
             .orElse(ResponseEntity.notFound().build());
@@ -36,15 +41,15 @@ public class ScooterController {
 
   @PostMapping
   @PreAuthorize("hasRole('ADMIN')")
-  public ResponseEntity<ScooterDto> createScooter(@RequestBody Scooter scooter) {
-    return ResponseEntity.ok(scooterService.save(scooter));
+  public ResponseEntity<ScooterResponseDto> createScooter(@RequestBody @Valid CreateScooterRequestDto requestDto) {
+    return ResponseEntity.ok(scooterService.save(requestDto));
   }
 
-  @PreAuthorize("hasRole('ADMIN')")
-  @PutMapping("/{id}")
-  public ResponseEntity<ScooterDto> updateScooter(@PathVariable Long id, @RequestBody Scooter scooterDetails) {
-    return ResponseEntity.ok(scooterService.update(id, scooterDetails));
-  }
+//  @PreAuthorize("hasRole('ADMIN')")
+//  @PutMapping("/{id}")
+//  public ResponseEntity<ScooterResponseDto> updateScooter(@PathVariable Long id, @RequestBody Scooter scooterDetails) {
+//    return ResponseEntity.ok(scooterService.update(id, scooterDetails));
+//  }
 
   @PreAuthorize("hasRole('ADMIN')")
   @DeleteMapping("/{id}")

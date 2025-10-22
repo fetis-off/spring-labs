@@ -34,7 +34,7 @@ public class User implements UserDetails {
     @Column(nullable = false, unique = true)
     public String email;
 
-    public BigDecimal balance;
+    public BigDecimal balance = BigDecimal.ZERO;
 
     @Column(nullable = false)
     private String password;
