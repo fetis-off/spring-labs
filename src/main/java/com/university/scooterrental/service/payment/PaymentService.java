@@ -23,7 +23,7 @@ public class PaymentService {
 
   @Transactional
   public PaymentDto save(PaymentDto payment) {
-    Payment entity = paymentMapper.toEntity(payment);
+    Payment entity = paymentMapper.toPayment(payment);
 
     if (payment.getUserId() != null) {
       User user = userRepository.findById(payment.getUserId())
@@ -36,6 +36,6 @@ public class PaymentService {
               .orElseThrow(() -> new EntityNotFoundException("Rental not found"));
       entity.setRental(rental);
     }
-    return paymentMapper.toDto(paymentRepository.save(entity));
+    return paymentMapper.toPaymentDto(paymentRepository.save(entity));
   }
 }

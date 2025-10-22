@@ -11,42 +11,45 @@ import com.university.scooterrental.model.user.User;
 import com.university.scooterrental.repository.RentalRepository;
 import com.university.scooterrental.repository.ScooterRepository;
 import com.university.scooterrental.repository.UserRepository;
-import com.university.scooterrental.service.payment.PaymentService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 public class RentalService {
   private final RentalRepository rentalRepository;
   private final UserRepository userRepository;
   private final ScooterRepository scooterRepository;
   private final RentalMapper rentalMapper;
-  private final PaymentService paymentService;
 
-  @Transactional(readOnly = true)
+    public RentalService(RentalRepository rentalRepository, UserRepository userRepository, ScooterRepository scooterRepository, RentalMapper rentalMapper) {
+        this.rentalRepository = rentalRepository;
+        this.userRepository = userRepository;
+        this.scooterRepository = scooterRepository;
+        this.rentalMapper = rentalMapper;
+    }
+
+    @Transactional(readOnly = true)
   public List<RentalResponseDto> findAll() {
     return rentalRepository.findAll()
             .stream()
-            .map(rentalMapper::toDto)
+            .map(rentalMapper::toRentalResponseDto)
             .toList();
   }
 
   @Transactional(readOnly = true)
   public RentalResponseDto findById(Long id) {
     return rentalRepository.findById(id)
-            .map(rentalMapper::toDto)
+            .map(rentalMapper::toRentalResponseDto)
             .orElseThrow(() -> new RuntimeException("Rental not found with id " + id));
   }
 
   @Transactional
   public RentalResponseDto save(RentalRequestDto rentalRequestDto) {
-    Rental rental = rentalMapper.toEntity(rentalRequestDto);
+    Rental rental = rentalMapper.toRental(rentalRequestDto);
 
     if (rentalRequestDto.getScooterId() != null) {
       Scooter scooter = scooterRepository.findById(rentalRequestDto.getScooterId())
@@ -61,7 +64,7 @@ public class RentalService {
               .orElseThrow(() -> new RuntimeException("User not found"));
       rental.setUser(user);
     }
-    return rentalMapper.toDto(rentalRepository.save(rental));
+    return rentalMapper.toRentalResponseDto(rentalRepository.save(rental));
   }
 
   @Transactional
@@ -84,7 +87,7 @@ public class RentalService {
       rental.setScooter(scooter);
     }
 
-    return rentalMapper.toDto(rentalRepository.save(rental));
+    return rentalMapper.toRentalResponseDto(rentalRepository.save(rental));
   }
 
   public void delete(Long id) {
