@@ -3,9 +3,7 @@ package com.university.scooterrental.model.rental;
 import com.university.scooterrental.model.scooter.Scooter;
 import com.university.scooterrental.model.user.User;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -30,6 +28,9 @@ public class Rental {
     private LocalDateTime startTime;
 
     private LocalDateTime endTime;
+
+    @Enumerated(EnumType.STRING)
+    private RentalStatus rentalStatus;
 
     private BigDecimal price;
 

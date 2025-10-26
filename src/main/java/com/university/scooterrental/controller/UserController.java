@@ -8,16 +8,12 @@ import com.university.scooterrental.model.user.User;
 import com.university.scooterrental.service.user.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 
 @Controller
 @RequestMapping("/users")
@@ -38,18 +34,15 @@ public class UserController {
         return userService.updateUserProfile(user.getId(), updateDto);
     }
 
-    @GetMapping("/profile")
-    public String currentUserProfile(Model model,
-                                     @AuthenticationPrincipal User user) {
-        UserDetailedDto currentUserProfile = userService.getCurrentUserProfile(user);
-        model.addAttribute("user", currentUserProfile);
-        return "profile";
+    @GetMapping("/me")
+    public ResponseEntity<UserDetailedDto> currentUserProfile(@AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(userService.getCurrentUserProfile(user));
     }
 
-    @PutMapping("/me/balance")
+    @PutMapping("/me/balance/top-up")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void topUpBalance(@AuthenticationPrincipal User user,
                              @RequestBody @Valid UserUpdateBalanceRequestDto updateDto) {
         userService.topUpBalance(user.getId(), updateDto);
     }
-
 }

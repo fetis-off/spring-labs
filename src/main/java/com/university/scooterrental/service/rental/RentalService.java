@@ -1,118 +1,141 @@
 package com.university.scooterrental.service.rental;
 
-import com.university.scooterrental.dto.payment.PaymentDto;
 import com.university.scooterrental.dto.rental.RentalRequestDto;
 import com.university.scooterrental.dto.rental.RentalResponseDto;
+import com.university.scooterrental.exception.RentalException;
+import com.university.scooterrental.exception.RentalNotFoundException;
+import com.university.scooterrental.exception.ScooterNotFoundException;
 import com.university.scooterrental.mapper.RentalMapper;
-import com.university.scooterrental.model.payment.PaymentStatus;
 import com.university.scooterrental.model.rental.Rental;
+import com.university.scooterrental.model.rental.RentalStatus;
 import com.university.scooterrental.model.scooter.Scooter;
+import com.university.scooterrental.model.scooter.ScooterStatus;
 import com.university.scooterrental.model.user.User;
 import com.university.scooterrental.repository.RentalRepository;
 import com.university.scooterrental.repository.ScooterRepository;
-import com.university.scooterrental.repository.UserRepository;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+
+import com.university.scooterrental.service.payment.PaymentService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Slf4j
 public class RentalService {
-  private final RentalRepository rentalRepository;
-  private final UserRepository userRepository;
-  private final ScooterRepository scooterRepository;
-  private final RentalMapper rentalMapper;
+    private final RentalRepository rentalRepository;
+    private final ScooterRepository scooterRepository;
+    private final RentalMapper rentalMapper;
+    private final PaymentService paymentService;
 
-    public RentalService(RentalRepository rentalRepository, UserRepository userRepository, ScooterRepository scooterRepository, RentalMapper rentalMapper) {
+    public RentalService(RentalRepository rentalRepository,
+                         ScooterRepository scooterRepository,
+                         RentalMapper rentalMapper,
+                         PaymentService paymentService) {
         this.rentalRepository = rentalRepository;
-        this.userRepository = userRepository;
         this.scooterRepository = scooterRepository;
         this.rentalMapper = rentalMapper;
+        this.paymentService = paymentService;
     }
 
     @Transactional(readOnly = true)
-  public List<RentalResponseDto> findAll() {
-    return rentalRepository.findAll()
-            .stream()
-            .map(rentalMapper::toRentalResponseDto)
-            .toList();
-  }
-
-  @Transactional(readOnly = true)
-  public RentalResponseDto findById(Long id) {
-    return rentalRepository.findById(id)
-            .map(rentalMapper::toRentalResponseDto)
-            .orElseThrow(() -> new RuntimeException("Rental not found with id " + id));
-  }
-
-  @Transactional
-  public RentalResponseDto save(RentalRequestDto rentalRequestDto) {
-    Rental rental = rentalMapper.toRental(rentalRequestDto);
-
-    if (rentalRequestDto.getScooterId() != null) {
-      Scooter scooter = scooterRepository.findById(rentalRequestDto.getScooterId())
-              .orElseThrow(() -> new RuntimeException("Scooter not found"));
-      rental.setScooter(scooter);
-      rental.setPrice(calculatePrice(rentalRequestDto.getStartTime(),
-              rentalRequestDto.getEndTime(), scooter.getTariff()));
+    public List<RentalResponseDto> findAll() {
+        return rentalRepository.findAll()
+                .stream()
+                .map(rentalMapper::toRentalResponseDto)
+                .toList();
     }
 
-    if (rentalRequestDto.getUserId() != null) {
-      User user = userRepository.findById(rentalRequestDto.getUserId())
-              .orElseThrow(() -> new RuntimeException("User not found"));
-      rental.setUser(user);
-    }
-    return rentalMapper.toRentalResponseDto(rentalRepository.save(rental));
-  }
-
-  @Transactional
-  public RentalResponseDto update(Long id, RentalRequestDto rentalDetails) {
-    Rental rental = rentalRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Rental not found with id " + id));
-
-    rental.setStartTime(rentalDetails.getStartTime());
-    rental.setEndTime(rentalDetails.getEndTime());
-
-    if (rentalDetails.getUserId() != null) {
-      User user = new User();
-      user.setId(rentalDetails.getUserId());
-      rental.setUser(user);
+    @Transactional(readOnly = true)
+    public RentalResponseDto findById(Long id) {
+        return rentalRepository.findById(id)
+                .map(rentalMapper::toRentalResponseDto)
+                .orElseThrow(() -> new RentalNotFoundException("Could not find rental with id " + id));
     }
 
-    if (rentalDetails.getScooterId() != null) {
-      Scooter scooter = new Scooter();
-      scooter.setId(rentalDetails.getScooterId());
-      rental.setScooter(scooter);
+    @Transactional
+    public RentalResponseDto save(User user, RentalRequestDto rentalRequestDto) {
+        Scooter scooter = scooterRepository.findById(rentalRequestDto.getScooterId())
+                .orElseThrow(
+                        () -> new ScooterNotFoundException("Scooter with id "
+                                + rentalRequestDto.getScooterId()
+                                + " not found")
+                );
+        validateScooterAvailability(scooter);
+
+        Rental rental = prepareRental(user, scooter);
+
+        scooter.setStatus(ScooterStatus.INACTIVE);
+
+        return rentalMapper.toRentalResponseDto(rentalRepository.save(rental));
     }
 
-    return rentalMapper.toRentalResponseDto(rentalRepository.save(rental));
-  }
-
-  public void delete(Long id) {
-    if (!rentalRepository.existsById(id)) {
-      throw new RuntimeException("Rental not found with id " + id);
-    }
-    rentalRepository.deleteById(id);
-  }
-
-  private BigDecimal calculatePrice(LocalDateTime start, LocalDateTime end, BigDecimal tariff) {
-    long days = ChronoUnit.DAYS.between(start, end);
-    if (days <= 0) {
-      throw new IllegalArgumentException("End time must be after start time");
+    public void delete(Long id) {
+        if (!rentalRepository.existsById(id)) {
+            throw new RentalNotFoundException("Could not find rental with id " + id);
+        }
+        rentalRepository.deleteById(id);
     }
 
-    return tariff.multiply(BigDecimal.valueOf(days));
-  }
+    @Transactional
+    public RentalResponseDto endRental(Long rentalId) {
+        Rental rental = rentalRepository.findById(rentalId)
+                .orElseThrow(
+                        () -> new RentalNotFoundException("Could not find rental with id " + rentalId)
+                );
 
-  private PaymentDto preparePayment(Rental rental) {
-    PaymentDto paymentDto = new PaymentDto();
-    paymentDto.setAmount(rental.getPrice());
-    paymentDto.setCreatedAt(LocalDateTime.now());
-    paymentDto.setUserId(rental.getUser().getId());
-    paymentDto.setScooterId(rental.getScooter().getId());
-    paymentDto.setStatus(PaymentStatus.PENDING);
-    return paymentDto;
-  }
+        if (rental.getEndTime() != null) {
+            throw new RentalException("Rental with id: " + rentalId + " already ended");
+        }
+        rental.setEndTime(LocalDateTime.now());
+
+        Scooter scooter = rental.getScooter();
+        scooter.setStatus(ScooterStatus.ACTIVE);
+        scooterRepository.save(scooter);
+
+        BigDecimal price = calculatePrice(rental.getStartTime(), rental.getEndTime(), scooter.getTariff());
+        rental.setPrice(price);
+
+        try {
+            paymentService.processPayment(rental);
+            rental.setRentalStatus(RentalStatus.PAYMENT_COMPLETED);
+            log.info("Rental {} ended and paid successfully", rentalId);
+        } catch (Exception e) {
+            rental.setRentalStatus(RentalStatus.PAYMENT_FAILED);
+            log.warn("Rental {} ended but payment failed: insufficient funds. User: {}",
+                    rentalId, rental.getUser().getId());
+        }
+
+        return rentalMapper.toRentalResponseDto(rentalRepository.save(rental));
+    }
+
+    private BigDecimal calculatePrice(LocalDateTime start, LocalDateTime end, BigDecimal tariff) {
+        long days = ChronoUnit.DAYS.between(start, end);
+        if (days <= 0) {
+            throw new IllegalArgumentException("End time must be after start time");
+        }
+
+        return tariff.multiply(BigDecimal.valueOf(days));
+    }
+
+    private void validateScooterAvailability(Scooter scooter) {
+        if (scooter.getStatus() == ScooterStatus.INACTIVE) {
+            throw new RentalException("Unfortunately, scooter status is INACTIVE so you can't rent it. "
+                    + "Please try again later or choose another one.");
+        }
+    }
+
+    private Rental prepareRental(User user, Scooter scooter) {
+        Rental rental = new Rental();
+        rental.setScooter(scooter);
+        rental.setRentalStatus(RentalStatus.ACTIVE);
+        rental.setUser(user);
+        rental.setStartTime(LocalDateTime.now());
+
+        return rental;
+    }
 }
