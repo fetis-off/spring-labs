@@ -2,6 +2,8 @@ package com.university.scooterrental.service.scooter;
 
 import com.university.scooterrental.dto.scooter.CreateScooterRequestDto;
 import com.university.scooterrental.dto.scooter.ScooterResponseDto;
+import com.university.scooterrental.exception.ScooterAlreadyExistsException;
+import com.university.scooterrental.exception.ScooterNotFoundException;
 import com.university.scooterrental.mapper.ScooterMapper;
 import com.university.scooterrental.model.scooter.Scooter;
 import com.university.scooterrental.repository.ScooterRepository;
@@ -31,22 +33,34 @@ public class ScooterService {
     }
 
     @Transactional(readOnly = true)
-    public Optional<ScooterResponseDto> findById(Long id) {
-        return scooterRepository.findById(id).map(scooterMapper::toScooterResponseDto);
+    public ScooterResponseDto findById(Long id) {
+        Scooter scooter = scooterRepository.findById(id)
+                .orElseThrow(() -> new ScooterNotFoundException("Could not find scooter with id: " + id));
+        return scooterMapper.toScooterResponseDto(scooter);
     }
 
     @Transactional
     public ScooterResponseDto save(CreateScooterRequestDto requestDto) {
+        if (scooterRepository.existsByModel(requestDto.getModel())) {
+            throw new ScooterAlreadyExistsException("Scooter with model "
+                    + requestDto.getModel() + " already exists");
+        }
         Scooter scooter = scooterMapper.toScooter(requestDto);
         scooterRepository.save(scooter);
         return scooterMapper.toScooterResponseDto(scooter);
     }
 
+    @Transactional
+    public void update(Long id, CreateScooterRequestDto requestDto) {
+        Scooter existingScooter = scooterRepository.findById(id)
+                .orElseThrow(() -> new ScooterNotFoundException("Could not find scooter with id: " + id));
+        scooterMapper.update(existingScooter, requestDto);
+    }
 
     @Transactional
     public void delete(Long id) {
         if (!scooterRepository.existsById(id)) {
-            throw new RuntimeException("Scooter not found with id " + id);
+            throw new ScooterNotFoundException("Could not find scooter with id: " + id);
         }
         scooterRepository.deleteById(id);
     }

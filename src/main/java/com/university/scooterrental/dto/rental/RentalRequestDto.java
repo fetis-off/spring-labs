@@ -1,11 +1,8 @@
 package com.university.scooterrental.dto.rental;
 
-import java.time.LocalDateTime;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import lombok.*;
 
 @Getter
 @Setter
@@ -13,9 +10,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class RentalRequestDto {
-  private Long id;
-  private Long userId;
-  private Long scooterId;
-  private LocalDateTime startTime;
-  private LocalDateTime endTime;
+    @NotNull(message = "scooterId should can not be null")
+    @Positive(message = "scooterId should be a positive number")
+    private Long scooterId;
 }

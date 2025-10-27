@@ -34,9 +34,7 @@ public class ScooterController {
 
   @GetMapping("/{id}")
   public ResponseEntity<ScooterResponseDto> getScooterById(@PathVariable Long id) {
-    return scooterService.findById(id)
-            .map(ResponseEntity::ok)
-            .orElse(ResponseEntity.notFound().build());
+    return ResponseEntity.ok(scooterService.findById(id));
   }
 
   @PostMapping
@@ -45,11 +43,12 @@ public class ScooterController {
     return ResponseEntity.ok(scooterService.save(requestDto));
   }
 
-//  @PreAuthorize("hasRole('ADMIN')")
-//  @PutMapping("/{id}")
-//  public ResponseEntity<ScooterResponseDto> updateScooter(@PathVariable Long id, @RequestBody Scooter scooterDetails) {
-//    return ResponseEntity.ok(scooterService.update(id, scooterDetails));
-//  }
+  @PreAuthorize("hasRole('ADMIN')")
+  @PutMapping("/{id}")
+  public void updateScooter(@PathVariable Long id,
+                            @RequestBody CreateScooterRequestDto requestDto) {
+    scooterService.update(id, requestDto);
+  }
 
   @PreAuthorize("hasRole('ADMIN')")
   @DeleteMapping("/{id}")

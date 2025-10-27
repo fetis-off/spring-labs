@@ -67,6 +67,24 @@ public class CustomGlobalExceptionHandler extends ResponseEntityExceptionHandler
         return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
+    @ExceptionHandler(ScooterNotFoundException.class)
+    public ResponseEntity<Object> handleScooterNotFoundException(
+            ScooterNotFoundException ex, WebRequest request) {
+        return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(RentalNotFoundException.class)
+    public ResponseEntity<Object> handleRentalNotFoundException(
+            RentalNotFoundException ex, WebRequest request) {
+        return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(ScooterAlreadyExistsException.class)
+    public ResponseEntity<Object> handleScooterAlreadyExistsException(
+            ScooterAlreadyExistsException ex, WebRequest request) {
+        return buildErrorResponse(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
     private String getErrorMessage(ObjectError e) {
         if (e instanceof FieldError fieldError) {
             String field = fieldError.getField();
