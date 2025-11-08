@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Головна сторінка</title>
+    <link href="/api/css/styles.css" rel="stylesheet">
+
+</head>
+<body class="main-page">
+<div class="container main-container">
+    <h1>Головна сторінка</h1>
+
+    <div class="user-info" id="userInfo">
+        <h2>Інформація про користувача</h2>
+        <p><strong>Email:</strong> <span id="userEmail"></span></p>
+        <div class="actions">
+            <button class="btn btn-primary" onclick="window.location.href='/view/scooters'">
+                🛴 Самокати
+            </button>
+            <button class="btn btn-danger" onclick="logout()">Вийти</button>
+        </div>
+    </div>
+
+    <div class="login-prompt" id="loginPrompt">
+        <p>Будь ласка, <a href="/api/view/login">увійдіть</a> або <a href="/api/view/registration">зареєструйтесь</a></p>
+    </div>
+</div>
+
+<script>
+    // Функція для декодування JWT токену
+    function parseJwt(token) {
+        try {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            return JSON.parse(jsonPayload);
+        } catch (e) {
+            return null;
+        }
+    }
+
+    // Функція для виходу
+    function logout() {
+        localStorage.removeItem('jwtToken');
+        window.location.href = '/api/view/login';
+    }
+
+    // Функція для виконання запиту з JWT токеном
+    async function fetchWithAuth(url, options = {}) {
+        const token = localStorage.getItem('jwtToken');
+
+        if (!token) {
+            return null;
+        }
+
+        const headers = {
+            ...options.headers,
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        };
+
+        const response = await fetch(url, {
+            ...options,
+            headers
+        });
+
+        if (response.status === 401) {
+            // Токен недійсний або закінчився
+            localStorage.removeItem('jwtToken');
+            window.location.href = '/api/view/login';
+            return null;
+        }
+
+        return response;
+    }
+
+    // Перевірка наявності токену при завантаженні сторінки
+    window.addEventListener('DOMContentLoaded', async () => {
+        const token = localStorage.getItem('jwtToken');
+
+        if (!token) {
+            document.getElementById('loginPrompt').classList.add('show');
+            return;
+        }
+
+        // Декодуємо токен, щоб отримати дані користувача
+        const userData = parseJwt(token);
+
+        if (userData) {
+            // Перевіряємо, чи не закінчився токен
+            const currentTime = Math.floor(Date.now() / 1000);
+            if (userData.exp && userData.exp < currentTime) {
+                localStorage.removeItem('jwtToken');
+                document.getElementById('loginPrompt').classList.add('show');
+                return;
+            }
+
+            // Відображаємо інформацію про користувача
+            document.getElementById('userEmail').textContent = userData.sub || userData.email || 'N/A';
+            document.getElementById('userInfo').classList.add('show');
+
+        } else {
+            document.getElementById('loginPrompt').classList.add('show');
+        }
+    });
+</script>
+</body>
+</html>

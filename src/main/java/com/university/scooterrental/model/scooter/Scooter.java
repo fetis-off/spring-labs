@@ -26,9 +26,6 @@ public class Scooter {
     private BigDecimal tariff;
 
     @Column(nullable = false)
-    private Integer quantity;
-
-    @Column(nullable = false)
     private Integer batteryLevel;
 
     @Column(nullable = false)

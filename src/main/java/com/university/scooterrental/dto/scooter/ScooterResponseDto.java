@@ -17,7 +17,6 @@ public class ScooterResponseDto {
   private Long id;
   private String model;
   private BigDecimal tariff;
-  private Integer quantity;
   private Integer batteryLevel;
   private ScooterStatus status;
 }
