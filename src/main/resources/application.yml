@@ -16,6 +16,11 @@ spring:
     show-sql: true
     open-in-view: false
 
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    cache: false
+
 server:
   servlet:
     context-path: /api
@@ -26,3 +31,5 @@ logging:
   level:
     org.springframework.web: DEBUG
     org.hibernate: INFO
+
+

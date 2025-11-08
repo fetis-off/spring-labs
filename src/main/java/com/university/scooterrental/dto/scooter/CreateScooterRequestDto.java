@@ -23,10 +23,6 @@ public class CreateScooterRequestDto {
     @PositiveOrZero(message = "Field tariff should be greater than 0")
     private BigDecimal tariff;
 
-    @NotNull(message = "Field quantity can`t be null")
-    @PositiveOrZero(message = "Field quantity should be greater than 0")
-    private Integer quantity;
-
     @NotNull(message = "Field batteryLevel can`t be null")
     @PositiveOrZero(message = "Field batteryLevel should be greater than 0")
     private Integer batteryLevel;
